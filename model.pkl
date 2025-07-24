@@ -1,0 +1,5 @@
+# Load model from file
+with open('my_model.pkl', 'rb') as file:
+    loaded_model = pickle.load(file)
+
+print("Model loaded successfully.")

@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏥 Hospital Readmission Analytics Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --accent: #4895ef;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --success: #4cc9f0;
+            --danger: #f72585;
+            --warning: #ff9e00;
+            --info: #00b4d8;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .main-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Prediction Form Styles */
+        .form-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .form-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 15px 15px 0 0;
+        }
+        
+        h1 {
+            color: var(--dark);
+            margin-bottom: 20px;
+            font-size: 22px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .form-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .form-header p {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        form {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .form-group {
+            position: relative;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #495057;
+        }
+        
+        .form-group label .required {
+            color: var(--danger);
+        }
+        
+        input, select, button {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+        
+        input::placeholder {
+            color: #adb5bd;
+        }
+        
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 15px;
+        }
+        
+        button {
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        /* Dashboard Styles */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .dashboard-header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .dashboard-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .card-value {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+        
+        .card-footer {
+            font-size: 12px;
+            color: #6c757d;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .chart-container {
+            height: 250px;
+            margin-top: 15px;
+        }
+        
+        /* Result Styles */
+        .result-container {
+            grid-column: 1 / -1;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .result {
+            padding: 20px;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            background: white;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .result::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0);
+            z-index: 1;
+        }
+
+        .result-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        @media (max-width: 768px) {
+            .result {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .result-main {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .result h2 {
+            font-size: 22px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .result p {
+            font-size: 18px;
+            font-weight: 500;
+        }
+        
+        .risk-meter {
+            height: 10px;
+            background: #e9ecef;
+            border-radius: 5px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+
+        .risk-level {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.8s ease-out;
+            width: 0;
+            background: linear-gradient(to right, #f09b4cff, #ff0000ff);
+        }
+
+        /* Color classes for different risk levels */
+        .risk-level.high {
+            background: linear-gradient(to right, #f72585, #b5179e);
+        }
+        .risk-level.medium {
+            background: linear-gradient(to right, #ff9e00, #ff6d00);
+        }
+        .risk-level.low {
+            background: linear-gradient(to right, #4cc9f0, #4895ef);
+        }
+        
+        .readmitted {
+            background-color: rgba(248, 215, 218, 0.2);
+            border-left: 5px solid var(--danger);
+        }
+        
+        .readmitted .risk-level {
+            background: linear-gradient(to right, #f72585, #b5179e);
+        }
+        
+        .not-readmitted {
+            background-color: rgba(212, 237, 218, 0.2);
+            border-left: 5px solid #28a745;
+        }
+        
+        .not-readmitted .risk-level {
+            background: linear-gradient(to right, #4cc9f0, #4895ef);
+        }
+        
+        .risk-details {
+            margin-top: 20px;
+        }
+        
+        .risk-factors {
+            margin-top: 15px;
+            padding: 0;
+            list-style: none;
+        }
+        
+        .risk-factors li {
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .risk-factors li:last-child {
+            border-bottom: none;
+        }
+        
+        .risk-factors i {
+            font-size: 16px;
+        }
+        
+        .high-risk i {
+            color: var(--danger);
+        }
+        
+        .medium-risk i {
+            color: var(--warning);
+        }
+        
+        .low-risk i {
+            color: var(--success);
+        }
+        
+        .suggestions {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: rgba(73, 80, 87, 0.05);
+            border-radius: 8px;
+        }
+        
+        .suggestions h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .suggestions ul {
+            padding-left: 20px;
+            margin: 0;
+        }
+        
+        .suggestions li {
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            margin-left: 5px;
+            color: var(--accent);
+            cursor: pointer;
+        }
+        
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+            font-weight: normal;
+        }
+        
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        /* Risk Trend Indicator */
+        .risk-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .risk-indicator.high {
+            background-color: rgba(247, 37, 133, 0.1);
+            color: var(--danger);
+        }
+        
+        .risk-indicator.medium {
+            background-color: rgba(255, 158, 0, 0.1);
+            color: var(--warning);
+        }
+        
+        .risk-indicator.low {
+            background-color: rgba(76, 201, 240, 0.1);
+            color: var(--success);
+        }
+        
+        /* Loading spinner */
+        .loader {
+            display: none;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--accent);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Prediction Form -->
+        <div class="form-container">
+            <h1><i class="fas fa-user-md"></i> Patient Assessment</h1>
+            
+            <div class="form-header">
+                <p>Enter patient details to assess readmission risk</p>
+            </div>
+            
+            <form id="predictionForm">
+                <div class="form-group">
+                    <label>Patient Age <span class="required">*</span></label>
+                    <input type="number" id="age" name="age" placeholder="e.g. 45" required min="0" max="120">
+                </div>
+                
+                <div class="form-group">
+                    <label>Billing Amount ($) <span class="required">*</span></label>
+                    <input type="number" id="billing" step="any" name="billing" placeholder="e.g. 2500.50" required min="0">
+                </div>
+
+                <div class="form-group">
+                    <label>Test Results <span class="required">*</span></label>
+                    <select id="test" name="test" required>
+                        <option value="" disabled selected>Select test result</option>
+                        <option value="Abnormal">Abnormal</option>
+                        <option value="Inconclusive">Inconclusive</option>
+                        <option value="Normal">Normal</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Gender <span class="required">*</span></label>
+                    <select id="gender" name="gender" required>
+                        <option value="" disabled selected>Select gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Health Condition <span class="required">*</span></label>
+                    <select id="condition" name="condition" required>
+                        <option value="" disabled selected>Select condition</option>
+                        <option value="Arthritis">Arthritis</option>
+                        <option value="Asthma">Asthma</option>
+                        <option value="Cancer">Cancer</option>
+                        <option value="Diabetes">Diabetes</option>
+                        <option value="Hypertension">Hypertension</option>
+                        <option value="Obesity">Obesity</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Admission Type <span class="required">*</span></label>
+                    <select id="admission" name="admission" required>
+                        <option value="" disabled selected>Select admission type</option>
+                        <option value="Elective">Elective</option>
+                        <option value="Emergency">Emergency</option>
+                        <option value="Urgent">Urgent</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Medication <span class="required">*</span></label>
+                    <select id="medication" name="medication" required>
+                        <option value="" disabled selected>Select medication</option>
+                        <option value="Aspirin">Aspirin</option>
+                        <option value="Ibuprofen">Ibuprofen</option>
+                        <option value="Lipitor">Lipitor</option>
+                        <option value="Metformin">Metformin</option>
+                        <option value="Paracetamol">Paracetamol</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Blood Type <span class="required">*</span></label>
+                    <select id="blood" name="blood" required>
+                        <option value="" disabled selected>Select blood type</option>
+                        <option value="A+">A+</option>
+                        <option value="A-">A-</option>
+                        <option value="B+">B+</option>
+                        <option value="B-">B-</option>
+                        <option value="AB+">AB+</option>
+                        <option value="AB-">AB-</option>
+                        <option value="O+">O+</option>
+                        <option value="O-">O-</option>
+                    </select>
+                </div>
+
+                <button type="submit" id="submitBtn">
+                    <i class="fas fa-chart-line"></i> Assess Risk
+                </button>
+            </form>
+            
+            <div class="loader" id="loader"></div>
+        </div>
+
+        <!-- Analytics Dashboard -->
+        <div class="dashboard-container">
+            <div class="dashboard-header">
+                <div class="dashboard-title">
+                    <i class="fas fa-chart-pie"></i> Readmission Risk Dashboard
+                </div>
+                <div class="dashboard-actions">
+                    <button id="refreshBtn" style="padding: 5px 10px; font-size: 12px;">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            
+            <div class="dashboard">
+                <!-- Risk Overview Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-heartbeat"></i> Risk Overview
+                        </div>
+                        <i class="fas fa-info-circle tooltip">
+                            <span class="tooltiptext">Overall readmission risk assessment</span>
+                        </i>
+                    </div>
+                    <div class="card-value" id="riskPercentage">--%</div>
+                    <div class="risk-meter">
+                        <div class="risk-level" id="overallRiskMeter"></div>
+                    </div>
+                    <div class="card-footer">
+                        <span id="riskTrend" class="risk-indicator">No data available</span>
+                    </div>
+                </div>
+                
+                <!-- Key Factors Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-exclamation-triangle"></i> Key Risk Factors
+                        </div>
+                        <i class="fas fa-info-circle tooltip">
+                            <span class="tooltiptext">Factors contributing most to readmission risk</span>
+                        </i>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="riskFactorsChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Condition Comparison Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-procedures"></i> Condition Comparison
+                        </div>
+                        <i class="fas fa-info-circle tooltip">
+                            <span class="tooltiptext">Readmission rates by health condition</span>
+                        </i>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="conditionChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Demographic Insights Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-users"></i> Demographic Insights
+                        </div>
+                        <i class="fas fa-info-circle tooltip">
+                            <span class="tooltiptext">Readmission patterns by age and gender</span>
+                        </i>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="demographicChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Result Container -->
+                <div class="result-container" id="resultContainer" style="display: none;">
+                    <div class="result" id="resultDiv">
+                        <div class="result-main">
+                            <h2 id="predictionText">
+                                <i class="fas fa-check-circle"></i> Submit patient data to assess risk
+                            </h2>
+                            <p id="probabilityText">Risk probability will appear here</p>
+                            
+                            <div class="risk-meter">
+                                <div class="risk-level" id="resultRiskMeter" style="width: 0%"></div>
+                            </div>
+                            
+                            <div class="risk-details">
+                                <h3>Key Risk Factors <i class="fas fa-info-circle tooltip">
+                                    <span class="tooltiptext">Factors contributing most to the readmission risk</span>
+                                </i></h3>
+                                <ul class="risk-factors" id="riskFactorsList">
+                                    <li class="high-risk"><i class="fas fa-arrow-up"></i> <strong>Submit data</strong> to see risk factors</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="suggestions">
+                            <h3><i class="fas fa-lightbulb"></i> Prevention Suggestions</h3>
+                            <ul id="suggestionsList">
+                                <li>Submit patient data to get personalized suggestions</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data for charts (in a real app, this would come from your backend)
+        const sampleData = {
+            riskFactors: {
+                labels: ['Primary Condition', 'Test Results', 'Age', 'Admission Type', 'Billing'],
+                data: [45, 30, 15, 7, 3]
+            },
+            conditionComparison: {
+                labels: ['Diabetes', 'Hypertension', 'Cancer', 'Asthma', 'Arthritis', 'Obesity'],
+                data: [38, 25, 22, 15, 12, 18]
+            },
+            demographicData: {
+                ageGroups: ['18-30', '31-45', '46-60', '61-75', '76+'],
+                male: [12, 18, 25, 32, 28],
+                female: [10, 15, 22, 28, 24]
+            }
+        };
+
+        // Initialize charts
+        let riskFactorsChart, conditionChart, demographicChart;
+
+        function initCharts() {
+            // Risk Factors Chart
+            const riskFactorsCtx = document.getElementById('riskFactorsChart').getContext('2d');
+            riskFactorsChart = new Chart(riskFactorsCtx, {
+                type: 'bar',
+                data: {
+                    labels: sampleData.riskFactors.labels,
+                    datasets: [{
+                        label: 'Contribution to Risk (%)',
+                        data: sampleData.riskFactors.data,
+                        backgroundColor: [
+                            'rgba(247, 37, 133, 0.7)',
+                            'rgba(255, 158, 0, 0.7)',
+                            'rgba(76, 201, 240, 0.7)',
+                            'rgba(105, 240, 174, 0.7)',
+                            'rgba(162, 155, 254, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(247, 37, 133, 1)',
+                            'rgba(255, 158, 0, 1)',
+                            'rgba(76, 201, 240, 1)',
+                            'rgba(105, 240, 174, 1)',
+                            'rgba(162, 155, 254, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 50,
+                            title: {
+                                display: true,
+                                text: 'Risk Contribution (%)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Condition Comparison Chart
+            const conditionCtx = document.getElementById('conditionChart').getContext('2d');
+            conditionChart = new Chart(conditionCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: sampleData.conditionComparison.labels,
+                    datasets: [{
+                        label: 'Readmission Rate (%)',
+                        data: sampleData.conditionComparison.data,
+                        backgroundColor: [
+                            'rgba(247, 37, 133, 0.7)',
+                            'rgba(255, 109, 0, 0.7)',
+                            'rgba(255, 158, 0, 0.7)',
+                            'rgba(76, 201, 240, 0.7)',
+                            'rgba(105, 240, 174, 0.7)',
+                            'rgba(162, 155, 254, 0.7)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        }
+                    }
+                }
+            });
+
+            // Demographic Chart
+            const demographicCtx = document.getElementById('demographicChart').getContext('2d');
+            demographicChart = new Chart(demographicCtx, {
+                type: 'line',
+                data: {
+                    labels: sampleData.demographicData.ageGroups,
+                    datasets: [
+                        {
+                            label: 'Male',
+                            data: sampleData.demographicData.male,
+                            borderColor: 'rgba(67, 97, 238, 1)',
+                            backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: 'Female',
+                            data: sampleData.demographicData.female,
+                            borderColor: 'rgba(247, 37, 133, 1)',
+                            backgroundColor: 'rgba(247, 37, 133, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Readmission Rate (%)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Form submission
+        document.getElementById('predictionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Show loading spinner
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('submitBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            
+            // Simulate API call with timeout
+            setTimeout(() => {
+                // Get form values
+                const age = document.getElementById('age').value;
+                const billing = document.getElementById('billing').value;
+                const test = document.getElementById('test').value;
+                const gender = document.getElementById('gender').value;
+                const condition = document.getElementById('condition').value;
+                const admission = document.getElementById('admission').value;
+                const medication = document.getElementById('medication').value;
+                const blood = document.getElementById('blood').value;
+                
+                // Simulate prediction (in a real app, this would come from your backend)
+                const riskScore = calculateRiskScore(age, billing, test, condition, admission);
+                const isReadmitted = riskScore > 50;
+                const probability = Math.min(100, Math.max(0, riskScore)).toFixed(1);
+                
+                // Update dashboard
+                updateDashboard(age, billing, test, gender, condition, admission, medication, blood, isReadmitted, probability);
+                
+                // Hide loader and reset button
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('submitBtn').disabled = false;
+                document.getElementById('submitBtn').innerHTML = '<i class="fas fa-chart-line"></i> Assess Risk';
+                
+                // Show result container
+                document.getElementById('resultContainer').style.display = 'block';
+                
+                // Scroll to results
+                document.getElementById('resultContainer').scrollIntoView({ behavior: 'smooth' });
+            }, 1500);
+        });
+
+        // Calculate a simulated risk score based on inputs
+        function calculateRiskScore(age, billing, test, condition, admission) {
+            let score = 0;
+            
+            // Age factor (higher risk for older patients)
+            score += parseInt(age) * 0.3;
+            
+            // Billing factor (higher bills = higher risk)
+            score += Math.min(30, parseFloat(billing) / 100);
+            
+            // Test results
+            if (test === 'Abnormal') score += 30;
+            else if (test === 'Inconclusive') score += 15;
+            
+            // Condition
+            if (condition === 'Diabetes') score += 25;
+            else if (condition === 'Cancer') score += 20;
+            else if (condition === 'Hypertension') score += 15;
+            else if (condition === 'Obesity') score += 10;
+            
+            // Admission type
+            if (admission === 'Emergency') score += 20;
+            else if (admission === 'Urgent') score += 10;
+            
+            // Add some randomness
+            score += Math.random() * 10 - 5;
+            
+            return Math.min(100, Math.max(5, score));
+        }
+
+        // Update dashboard with prediction results
+        function updateDashboard(age, billing, test, gender, condition, admission, medication, blood, isReadmitted, probability) {
+            // Update risk percentage
+            document.getElementById('riskPercentage').textContent = `${probability}%`;
+            document.getElementById('overallRiskMeter').style.width = `${probability}%`;
+            document.getElementById('resultRiskMeter').style.width = `${probability}%`;
+            
+            // Update risk trend indicator
+            const riskTrend = document.getElementById('riskTrend');
+            if (probability > 60) {
+                riskTrend.textContent = 'High risk trend';
+                riskTrend.className = 'risk-indicator high';
+                riskTrend.innerHTML = '<i class="fas fa-arrow-up"></i> High risk trend';
+            } else if (probability > 30) {
+                riskTrend.textContent = 'Moderate risk trend';
+                riskTrend.className = 'risk-indicator medium';
+                riskTrend.innerHTML = '<i class="fas fa-arrow-right"></i> Moderate risk trend';
+            } else {
+                riskTrend.textContent = 'Low risk trend';
+                riskTrend.className = 'risk-indicator low';
+                riskTrend.innerHTML = '<i class="fas fa-arrow-down"></i> Low risk trend';
+            }
+            
+            // Update result text
+            const resultDiv = document.getElementById('resultDiv');
+            const predictionText = document.getElementById('predictionText');
+            
+            if (isReadmitted) {
+                resultDiv.className = 'result readmitted';
+                predictionText.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Patient will likely be readmitted (${probability}% risk)`;
+            } else {
+                resultDiv.className = 'result not-readmitted';
+                predictionText.innerHTML = `<i class="fas fa-check-circle"></i> Patient unlikely to be readmitted (${probability}% risk)`;
+            }
+            
+            document.getElementById('probabilityText').textContent = `Probability: ${probability}%`;
+            
+            // Update risk factors
+            const riskFactorsList = document.getElementById('riskFactorsList');
+            riskFactorsList.innerHTML = '';
+            
+            // Add risk factors based on inputs
+            const factors = [
+                { name: 'Primary Condition', value: condition, risk: 'high' },
+                { name: 'Test Results', value: test, risk: test === 'Abnormal' ? 'high' : test === 'Inconclusive' ? 'medium' : 'low' },
+                { name: 'Age', value: `${age} years`, risk: age > 65 ? 'medium' : 'low' },
+                { name: 'Admission Type', value: admission, risk: admission === 'Emergency' ? 'high' : admission === 'Urgent' ? 'medium' : 'low' },
+                { name: 'Billing Amount', value: `$${parseFloat(billing).toFixed(2)}`, risk: billing > 5000 ? 'medium' : 'low' }
+            ];
+            
+            factors.forEach(factor => {
+                const li = document.createElement('li');
+                li.className = `${factor.risk}-risk`;
+                li.innerHTML = `<i class="fas fa-arrow-${factor.risk === 'low' ? 'down' : 'up'}"></i> <strong>${factor.name}:</strong> ${factor.value}`;
+                riskFactorsList.appendChild(li);
+            });
+            
+            // Update suggestions
+            const suggestionsList = document.getElementById('suggestionsList');
+            suggestionsList.innerHTML = '';
+            
+            const suggestions = [
+                'Schedule follow-up appointment within 7 days of discharge',
+                'Provide patient education materials about ' + condition,
+                'Consider care coordination with primary physician'
+            ];
+            
+            if (condition === 'Diabetes') {
+                suggestions.push('Monitor blood glucose levels regularly');
+                suggestions.push('Provide nutritional counseling');
+            }
+            
+            if (condition === 'Hypertension') {
+                suggestions.push('Schedule regular blood pressure checks');
+            }
+            
+            if (admission === 'Emergency') {
+                suggestions.push('Arrange home health services if needed');
+            }
+            
+            if (age > 65) {
+                suggestions.push('Assess for fall risk and home safety');
+            }
+            
+            suggestions.forEach(suggestion => {
+                const li = document.createElement('li');
+                li.textContent = suggestion;
+                suggestionsList.appendChild(li);
+            });
+            
+            // Update risk factors chart
+            riskFactorsChart.data.datasets[0].data = [
+                condition === 'Diabetes' ? 45 : condition === 'Cancer' ? 40 : 35,
+                test === 'Abnormal' ? 30 : test === 'Inconclusive' ? 20 : 10,
+                age > 65 ? 20 : age > 40 ? 15 : 10,
+                admission === 'Emergency' ? 15 : admission === 'Urgent' ? 10 : 5,
+                billing > 5000 ? 10 : 5
+            ];
+            riskFactorsChart.update();
+        }
+
+        // Refresh button
+        document.getElementById('refreshBtn').addEventListener('click', function() {
+            this.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Refreshing...';
+            setTimeout(() => {
+                this.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+                // In a real app, you would refresh data from the server here
+            }, 1000);
+        });
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            
+            // Tooltip functionality
+            const tooltips = document.querySelectorAll('.tooltip');
+            tooltips.forEach(tooltip => {
+                tooltip.addEventListener('click', function() {
+                    const tooltipText = this.querySelector('.tooltiptext');
+                    tooltipText.style.visibility = tooltipText.style.visibility === 'visible' ? 'hidden' : 'visible';
+                    tooltipText.style.opacity = tooltipText.style.opacity === '1' ? '0' : '1';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
